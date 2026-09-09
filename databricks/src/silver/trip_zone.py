@@ -9,7 +9,7 @@ def get_changes_df() -> DataFrame:
     bronze_zone = DeltaTable.forName(spark,"nyc_taxi.bronze_zone")
 
     # Get the latest version
-    latest_version = bronze_zone.history(1).select("version").first()[0]
+    latest_version = bronze_zone.history().select("version").first()[0]
 
     # Get the newly inserted DataFrame from bronze green trip
     changes_df = spark.sql(f"""

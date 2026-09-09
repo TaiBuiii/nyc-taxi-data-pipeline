@@ -11,7 +11,7 @@ def get_changes_df():
                         service_zone,
                         zone1,
                         zone2
-                    FROM table_changes("nyc_taxi.silver_zone", 1)
+                    FROM table_changes("nyc_taxi.silver_zone", {latest_version})
                 """)
     return df_changes.dropDuplicates(["zone_id"])
 
