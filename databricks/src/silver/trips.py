@@ -98,7 +98,8 @@ def handle_outliers(df: DataFrame, numerical_attrs: list[str]) -> DataFrame:
 def merge_silver_data(df_final: DataFrame) -> None:
     silver_trip = DeltaTable.forName(spark, "nyc_taxi.silver_green_trip")
 
-    silver_trip.alias("target").merge(df_final.alias("source"), "target.deterministic_hash_key = source.deterministic_hash_key")\
+    silver_trip.alias("target")\
+                .merge(df_final.alias("source"), "target.deterministic_hash_key = source.deterministic_hash_key")\
                 .whenNotMatchedInsertAll()\
                 .execute()
 

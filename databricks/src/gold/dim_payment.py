@@ -1,39 +1,31 @@
 from pyspark.sql import functions as F
 from delta.tables import DeltaTable
 
-SOURCE_PATH = "abfss://silver@nyctaxidatalakes.dfs.core.windows.net/trip_payment"
-TARGET_PATH = "abfss://gold@nyctaxidatalakes.dfs.core.windows.net/dim_trip_payment"
-
-def create_dim_payment_table():
-    spark.sql("CREATE DATABASE IF NOT EXISTS gold")
-    spark.sql(f"""
-        CREATE TABLE IF NOT EXISTS gold.dim_trip_payment(
-            payment_type_sk LONG,
-            payment_type_id INTEGER,
-            payment_type STRING
-        )
-        USING DELTA LOCATION '{TARGET_PATH}'
+def get_changes_df():
+    silver_payment = DeltaTable.forName(spark, "nyc_taxi.silver_payment")
+    latest_version = silver_payment.history().select("version").first()[0]
+    df_changes = spark.sql(f"""
+    SELECT payment_type_id, payment_type
+    FROM table_changes('nyc_taxi.silver_payment', {latest_version})
     """)
- 
-def process_dim_payment():
-    create_dim_payment_table()
+    return df_changes.dropDuplicates(["payment_type_id"])
 
-    payment_df = spark.read.format("delta") \
-        .option("path", SOURCE_PATH) \
-        .load() \
-        .dropDuplicates(["payment_type_id"]) \
-        .withColumns({"payment_type_sk": F.monotonically_increasing_id() + 1})
 
-    dim_payment = DeltaTable.forPath(spark, TARGET_PATH)
-
-    dim_payment.alias("target").merge(
-        payment_df.alias("source"),
-        "target.payment_type_id = source.payment_type_id"
-    ).whenMatchedUpdate(
-        set={
-            "payment_type_id": "source.payment_type_id",
-            "payment_type": "source.payment_type"
-        }
-    ).whenNotMatchedInsertAll().execute()
-
-process_dim_payment()
+def merge_scd_1(df_changes):
+    dim_payment = DeltaTable.forName(spark, "nyc_taxi.dim_payment")
+    dim_payment.alias("target")\
+                .merge(df_changes.alias("source"), "target.payment_type_id = source.payment_type_id")\
+                .whenMatchedUpdate(
+                    set = {
+                    "payment_type_id": "source.payment_type_id",
+                    "payment_type": "source.payment_type"
+                })\
+                .whenNotMatchedInsert(
+                    values = {
+                        "payment_type_id": "source.payment_type_id",
+                        "payment_type": "source.payment_type"
+                    }
+                )\
+                .execute()
+    
+merge_scd_1(get_changes_df())

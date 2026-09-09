@@ -1,22 +1,49 @@
+from delta.tables import DeltaTable
 from pyspark.sql import functions as F
-from pyspark.sql.types import StructType, StructField, LongType, DoubleType, StringType, TimestampType
+from pyspark.sql import DataFrame
 
-def process_trip_type():
-    # read trip_type data from bronze layer
-    df = spark.read.format("csv") \
-        .option("inferSchema", True) \
-        .option("header", True) \
-        .load("abfss://bronze@nyctaxidatalakes.dfs.core.windows.net/trip_type")
 
-    # transform trip_type data
+def get_changes_df() -> DataFrame:
+
+    # Load bronze_green_trip Delta Table instance
+    bronze_type = DeltaTable.forName(spark,"nyc_taxi.bronze_type")
+
+    # Get the latest version
+    latest_version = bronze_type.history(1).select("version").first()[0]
+
+    # Get the newly inserted DataFrame from bronze green trip
+    changes_df = spark.sql(f"""
+        SELECT *
+        FROM table_changes(
+            'nyc_taxi.bronze_type',
+            {latest_version}
+        )
+        WHERE _change_type = 'insert'
+    """)
+    return changes_df
+
+
+def process_trip_type(df:DataFrame):
     df = df.select(
         F.col("trip_type").cast("int").alias("trip_type_id"),
-        F.trim(F.col("description").cast("string")).alias("trip_type")
+        F.trim(F.col("description").cast("string")).alias("trip_type"),
+        F.col("created_on")
     )
 
-    # write data to silver layer
-    df.write.format("delta") \
-        .mode("overwrite") \
-        .save("abfss://silver@nyctaxidatalakes.dfs.core.windows.net/trip_type")
+    df = df.withColumn("modified_on", F.current_timestamp())
 
-process_trip_type()
+    return df
+
+def merge_trip_type(df_final:DataFrame):
+    silver_type = DeltaTable.forName(spark, "nyc_taxi.silver_type")
+    silver_type.alias("target")\
+                .merge(df_final.alias("source"), "target.trip_type_id = source.trip_type_id")\
+                .whenNotMatchedInsertAll()\
+                .execute()
+
+def main():
+    df = get_changes_df()
+    df_final = process_trip_type(df)
+    merge_trip_type(df_final)
+
+main()

@@ -1,40 +1,31 @@
 from pyspark.sql import functions as F
 from delta.tables import DeltaTable
 
-SOURCE_PATH = "abfss://silver@nyctaxidatalakes.dfs.core.windows.net/trip_type"
-TARGET_PATH = "abfss://gold@nyctaxidatalakes.dfs.core.windows.net/dim_trip_type"
-
-def create_dim_type_table():
-    spark.sql("CREATE DATABASE IF NOT EXISTS gold")
-    spark.sql(f"""
-        CREATE TABLE IF NOT EXISTS gold.dim_trip_type (
-            trip_type_sk LONG,
-            trip_type_id INTEGER,
-            trip_type STRING
-        )
-        USING DELTA LOCATION '{TARGET_PATH}'
+def get_changes_df():
+    silver_type = DeltaTable.forName(spark, "nyc_taxi.silver_type")
+    latest_version = silver_type.history().select("version").first()[0]
+    df_changes = spark.sql(f"""
+    SELECT trip_type_id, trip_type 
+    FROM table_changes('nyc_taxi.silver_type', {latest_version})
     """)
+    return df_changes.dropDuplicates(["trip_type_id"])
 
-def process_dim_type():
-    create_dim_type_table()
 
-    trip_type_df = spark.read.format("delta")\
-        .option("path", SOURCE_PATH)\
-        .load()\
-        .dropDuplicates(["trip_type_id"]) \
-        .withColumn("trip_type_sk", F.monotonically_increasing_id() + 1)
-
-    dim_trip_type = DeltaTable.forPath(spark, TARGET_PATH)
+def merge_scd_1(df_changes):
+    dim_type = DeltaTable.forName(spark, "nyc_taxi.dim_type")
+    dim_type.alias("target")\
+                .merge(df_changes.alias("source"), "target.trip_type_id = source.trip_type_id")\
+                .whenMatchedUpdate(
+                    set = {
+                    "trip_type_id": "source.trip_type_id",
+                    "trip_type": "source.trip_type"
+                })\
+                .whenNotMatchedInsert(
+                    values = {
+                        "trip_type_id": "source.trip_type_id",
+                        "trip_type": "source.trip_type"
+                    }
+                )\
+                .execute()
     
-    dim_trip_type.alias("target").merge(
-        trip_type_df.alias("source"),
-        "target.trip_type_id = source.trip_type_id"
-    ).whenMatchedUpdate(
-        set = {
-            "trip_type_id": "source.trip_type_id",
-            "trip_type": "source.trip_type"
-        }
-    ).whenNotMatchedInsertAll().execute()
-
-
-process_dim_type()
+merge_scd_1(get_changes_df())
