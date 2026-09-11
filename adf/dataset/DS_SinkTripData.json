@@ -35,7 +35,7 @@
 					"value": "landing/green_taxi/year=@{dataset().year}/month=@{dataset().month}",
 					"type": "Expression"
 				},
-				"fileSystem": "nyc-taxi"
+				"fileSystem": "nyc-taxi-data"
 			},
 			"compressionCodec": "snappy"
 		},
