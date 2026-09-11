@@ -32,10 +32,10 @@
 					"type": "Expression"
 				},
 				"folderPath": {
-					"value": "@dataset().folder_name",
+					"value": "landing/@{dataset().folder_name}",
 					"type": "Expression"
 				},
-				"fileSystem": "bronze"
+				"fileSystem": "nyc-taxi-data"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",

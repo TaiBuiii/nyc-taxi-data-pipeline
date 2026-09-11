@@ -32,10 +32,10 @@
 					"type": "Expression"
 				},
 				"folderPath": {
-					"value": "green_taxi/year=@{dataset().year}/month=@{dataset().month}",
+					"value": "landing/green_taxi/year=@{dataset().year}/month=@{dataset().month}",
 					"type": "Expression"
 				},
-				"fileSystem": "bronze"
+				"fileSystem": "nyc-taxi-data"
 			},
 			"compressionCodec": "snappy"
 		},
