@@ -7,7 +7,8 @@
 				"defaultValue": "keyvault-nyc-taxi"
 			},
 			"databricks_workspace": {
-				"type": "string"
+				"type": "string",
+				"defaultValue": "https://adb-7405619664597762.2.azuredatabricks.net"
 			},
 			"databricks_access_token_name": {
 				"type": "string"
