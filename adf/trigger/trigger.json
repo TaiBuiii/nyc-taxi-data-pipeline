@@ -9,7 +9,7 @@
 			"recurrence": {
 				"frequency": "Month",
 				"interval": 1,
-				"startTime": "2026-09-02T04:36:00",
+				"startTime": "2026-09-11T04:36:00",
 				"timeZone": "SE Asia Standard Time",
 				"schedule": {
 					"minutes": [
