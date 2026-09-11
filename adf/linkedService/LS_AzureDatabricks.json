@@ -3,7 +3,8 @@
 	"properties": {
 		"parameters": {
 			"key_vault_name": {
-				"type": "string"
+				"type": "string",
+				"defaultValue": "keyvault-nyc-taxi"
 			},
 			"databricks_workspace": {
 				"type": "string"
