@@ -139,6 +139,64 @@
 									}
 								}
 							]
+						},
+						{
+							"name": "Update Enable To False",
+							"type": "Script",
+							"dependsOn": [
+								{
+									"activity": "Copy Raw Trip Data",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "LS_AzureSqlDatabase",
+								"type": "LinkedServiceReference",
+								"parameters": {
+									"db_server_name": {
+										"value": "@pipeline().parameters.p_DatabaseServerName",
+										"type": "Expression"
+									},
+									"db_name": {
+										"value": "@pipeline().parameters.p_DatabaseName",
+										"type": "Expression"
+									},
+									"db_user_name": {
+										"value": "@pipeline().parameters.p_DatabaseUserName",
+										"type": "Expression"
+									},
+									"key_vault_name": {
+										"value": "@pipeline().parameters.p_KeyVaultName",
+										"type": "Expression"
+									},
+									"db_password_secret_name": {
+										"value": "@pipeline().parameters.kv_DatabasePasswordSecretName",
+										"type": "Expression"
+									}
+								}
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "UPDATE dbo.green_taxi_control\nSET enabled = 0\nWHERE @{item().year} AND @{item().month}",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
 						}
 					]
 				}
