@@ -10,7 +10,18 @@
 				"frequency": "Month",
 				"interval": 1,
 				"startTime": "2026-09-02T04:36:00",
-				"timeZone": "SE Asia Standard Time"
+				"timeZone": "SE Asia Standard Time",
+				"schedule": {
+					"minutes": [
+						0
+					],
+					"hours": [
+						0
+					],
+					"monthDays": [
+						1
+					]
+				}
 			}
 		}
 	}
