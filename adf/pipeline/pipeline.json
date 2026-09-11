@@ -241,6 +241,63 @@
 						}
 					]
 				}
+			},
+			{
+				"name": "Transformation",
+				"type": "DatabricksJob",
+				"dependsOn": [
+					{
+						"activity": "For Each Year And Month Bronze",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "For Each Files Bronze",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"jobId": "109773052641678",
+					"jobParameters": {
+						"p_StorageAccountName": {
+							"value": "@pipeline().parameters.p_StorageAccountName",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_AzureDatabricks",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"key_vault_name": {
+							"value": "@pipeline().parameters.p_KeyVaultName",
+							"type": "Expression"
+						},
+						"databricks_workspace": {
+							"value": "@pipeline().parameters.p_DatabrickWorkspaceURL",
+							"type": "Expression"
+						},
+						"databricks_access_token_name": {
+							"value": "@pipeline().parameters.kv_DatabrickAccessTokenSecretName",
+							"type": "Expression"
+						},
+						"cluster_id": {
+							"value": "@pipeline().parameters.p_ClusterId",
+							"type": "Expression"
+						}
+					}
+				}
 			}
 		],
 		"parameters": {
