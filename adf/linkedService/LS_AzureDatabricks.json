@@ -11,7 +11,8 @@
 				"defaultValue": "https://adb-7405619664597762.2.azuredatabricks.net"
 			},
 			"databricks_access_token_name": {
-				"type": "string"
+				"type": "string",
+				"defaultValue": "databricks-token"
 			},
 			"cluster_id": {
 				"type": "string"
