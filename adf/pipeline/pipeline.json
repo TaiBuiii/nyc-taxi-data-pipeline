@@ -305,15 +305,15 @@
 				"type": "DatabricksJob",
 				"dependsOn": [
 					{
-						"activity": "For Each Year And Month Bronze",
+						"activity": "For Each Files Bronze",
 						"dependencyConditions": [
 							"Succeeded"
 						]
 					},
 					{
-						"activity": "For Each Files Bronze",
+						"activity": "For Each Year And Month Bronze",
 						"dependencyConditions": [
-							"Succeeded"
+							"Completed"
 						]
 					}
 				],
