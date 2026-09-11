@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame
 def get_changes_df() -> DataFrame:
 
     # Load bronze_green_trip Delta Table instance
-    bronze_payment = DeltaTable.forName(spark,"nyc_taxi.bronze_payment")
+    bronze_payment = DeltaTable.forName(spark,"nyc_taxi.bronze.payment")
 
     # Get the latest version
     latest_version = bronze_payment.history(1).select("version").first()[0]
@@ -15,7 +15,7 @@ def get_changes_df() -> DataFrame:
     changes_df = spark.sql(f"""
         SELECT *
         FROM table_changes(
-            'nyc_taxi.bronze_payment',
+            'nyc_taxi.bronze.payment',
             {latest_version}
         )
         WHERE _change_type = 'insert'
@@ -34,7 +34,7 @@ def process_trip_payment(df:DataFrame):
     return df
 
 def merge_trip_payment(df_final:DataFrame):
-    silver_payment = DeltaTable.forName(spark, "nyc_taxi.silver_payment")
+    silver_payment = DeltaTable.forName(spark, "nyc_taxi.silver.payment")
     silver_payment.alias("target")\
                 .merge(df_final.alias("source"), "target.payment_type_id = source.payment_type_id")\
                 .whenNotMatchedInsertAll()\

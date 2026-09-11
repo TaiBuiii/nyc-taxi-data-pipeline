@@ -4,7 +4,7 @@ from delta.tables import DeltaTable
 import sys 
 
 def get_changes_df():
-    silver_trip = DeltaTable.forName(spark, "nyc_taxi.silver_green_trip")
+    silver_trip = DeltaTable.forName(spark, "nyc_taxi.silver.green_trip")
     latest_version = silver_trip.history().select("version").first()[0]
     df_changes = spark.sql(f"""
             SELECT 
@@ -24,16 +24,16 @@ def get_changes_df():
                 trip_duration,
                 average_speed,
                 extra_charge
-            FROM table_changes("nyc_taxi.silver_green_trip", {latest_version})
+            FROM table_changes("nyc_taxi.silver.green_trip", {latest_version})
     """)
     return df_changes.dropDuplicates(["deterministic_hash_key"])
 
 def transform_fact_trips(silver_trip : DataFrame):
     
     # Read dimesion tables in gold layer
-    dim_zone = spark.read.table("nyc_taxi.dim_zone")
-    dim_type = spark.read.table("nyc_taxi.dim_type")
-    dim_payment = spark.read.table("nyc_taxi.dim_payment")
+    dim_zone = spark.read.table("nyc_taxi.gold.dim_zone")
+    dim_type = spark.read.table("nyc_taxi.gold.dim_type")
+    dim_payment = spark.read.table("nyc_taxi.gold.dim_payment")
         
     # Join silver data with dimension tables
     fact_trip = silver_trip\
@@ -62,7 +62,7 @@ def transform_fact_trips(silver_trip : DataFrame):
     return fact_trip
         
 def mergeToFactTrips(df : DataFrame):
-    fact_trips = DeltaTable.forName(spark, "nyc_taxi.fact_trips")
+    fact_trips = DeltaTable.forName(spark, "nyc_taxi.gold.fact_trips")
     fact_trips.alias("target").merge(df.alias("source"), "target.trip_id = source.trip_id")\
         .whenMatchedUpdate(
             set = {

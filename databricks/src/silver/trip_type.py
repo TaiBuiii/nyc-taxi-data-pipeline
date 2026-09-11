@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame
 def get_changes_df() -> DataFrame:
 
     # Load bronze_green_trip Delta Table instance
-    bronze_type = DeltaTable.forName(spark,"nyc_taxi.bronze_type")
+    bronze_type = DeltaTable.forName(spark,"nyc_taxi.bronze.type")
 
     # Get the latest version
     latest_version = bronze_type.history(1).select("version").first()[0]
@@ -15,7 +15,7 @@ def get_changes_df() -> DataFrame:
     changes_df = spark.sql(f"""
         SELECT *
         FROM table_changes(
-            'nyc_taxi.bronze_type',
+            'nyc_taxi.bronze.type',
             {latest_version}
         )
         WHERE _change_type = 'insert'
@@ -35,7 +35,7 @@ def process_trip_type(df:DataFrame):
     return df
 
 def merge_trip_type(df_final:DataFrame):
-    silver_type = DeltaTable.forName(spark, "nyc_taxi.silver_type")
+    silver_type = DeltaTable.forName(spark, "nyc_taxi.silver.type")
     silver_type.alias("target")\
                 .merge(df_final.alias("source"), "target.trip_type_id = source.trip_type_id")\
                 .whenNotMatchedInsertAll()\

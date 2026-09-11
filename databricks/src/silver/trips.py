@@ -5,7 +5,7 @@ from pyspark.sql import DataFrame
 def get_changes_df() -> DataFrame:
 
     # Load bronze_green_trip Delta Table instance
-    bronze_green_trip = DeltaTable.forName(spark,"nyc_taxi.bronze_green_trip")
+    bronze_green_trip = DeltaTable.forName(spark,"nyc_taxi.bronze.green_trip")
 
     # Get the latest version
     latest_version = bronze_green_trip.history(1).select("version").first()[0]
@@ -14,7 +14,7 @@ def get_changes_df() -> DataFrame:
     changes_df = spark.sql(f"""
         SELECT *
         FROM table_changes(
-            'nyc_taxi.bronze_green_trip',
+            'nyc_taxi.bronze.green_trip',
             {latest_version}
         )
         WHERE _change_type = 'insert'
@@ -96,7 +96,7 @@ def handle_outliers(df: DataFrame, numerical_attrs: list[str]) -> DataFrame:
     return df
 
 def merge_silver_data(df_final: DataFrame) -> None:
-    silver_trip = DeltaTable.forName(spark, "nyc_taxi.silver_green_trip")
+    silver_trip = DeltaTable.forName(spark, "nyc_taxi.silver.green_trip")
 
     silver_trip.alias("target")\
                 .merge(df_final.alias("source"), "target.deterministic_hash_key = source.deterministic_hash_key")\
