@@ -1,5 +1,6 @@
 {
 	"name": "LS_AzureDataLakeStorage",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
 	"properties": {
 		"parameters": {
 			"storage_name": {

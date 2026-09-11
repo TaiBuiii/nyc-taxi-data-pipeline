@@ -1,5 +1,6 @@
 {
 	"name": "LS_AzureKeyVault",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
 	"properties": {
 		"parameters": {
 			"key_vault_name": {
