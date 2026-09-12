@@ -190,7 +190,7 @@
 									{
 										"type": "Query",
 										"text": {
-											"value": "UPDATE dbo.green_taxi_control\nSET enabled = 0\nWHERE year = @{item().year} month = AND @{item().month}",
+											"value": "UPDATE dbo.green_taxi_control\nSET enabled = 0\nWHERE year = @{item().year} AND month = @{item().month}",
 											"type": "Expression"
 										}
 									}
