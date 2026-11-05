@@ -32,8 +32,8 @@ The pipeline follows an **ELT (Extract, Load, Transform)** process.
 
 ### **2.1 Azure Data Factory**
 
-Azure Data Factory (ADF) is responsible for data ingestion and pipeline orchestration. ADF retrieves processing metadata from the Azure SQL Database using a Lookup activity. The metadata table determines which year/month partitions need to be processed using the dynamic parameters. This allows the pipeline to process multiple monthly partitions using a single reusable workflow.
-![Data Architecture](documents/adf.png)
+Azure Data Factory (ADF) is responsible for data ingestion. ADF retrieves processing metadata from the Azure SQL Database using a Lookup activity. The metadata table determines which year/month partitions need to be processed using the dynamic parameters. Ultimately, Databricks job is triggered for transformation orchestration. This allows the pipeline to ingest multiple monthly partitions using a single reusable workflow.
+![Data Architecture](documents/ingestion_adf.jpg)
 
 ### **2.2 Azure Data Lake Storage Gen2**
 
@@ -78,6 +78,11 @@ Azure Databricks is responsible for data transformation and data modeling. Parti
 
 - **Dimensions (SCD Type 1):** Create dimension tables, deduplicate natural keys, assign surrogate keys, and use `MERGE (UPSERT)` to update current values without maintaining history.
 - **Fact Table:** Create `fact_trips` partitioned by `(year, month)`, join Silver data with dimension tables to retrieve surrogate keys, assign `trip_sk`, and store required measures.
+
+Additionally, the transformation process is orchestrated by Databricks job:
+![Data Architecture](documents/databrick_jobs_flow.jpg)
+
+![Data Architecture](documents/databrick_jobs.jpg)
 
 
 ### **2.4 Azure SQL Database**
@@ -231,7 +236,7 @@ CREATE TABLE dbo.green_taxi_control (
 );
 
 INSERT INTO dbo.green_taxi_control (year, month, enabled)
-VALUES ('2024', '01'), ('2024', '02');
+VALUES ('2024', '01', 1), ('2024', '02', 1);
 ```
 
 3. **Configure Databricks:** 
@@ -252,12 +257,19 @@ Use Key Vault or managed identity for credentials, grant ADF access to ADLS/Data
 ## **6. Repository Layout**
 
 ```text
-nyc-green-taxi-data-pipeline/
+nyc-taxi-data-pipeline/
 ├── README.md
 ├── adf/                                        # Azure Data Factory resources
 │   ├── publish_config.json
+│   ├── dataset/
+│   │   ├── DS_AzureSqlTable.json
+│   │   ├── DS_SinkReferenceData.json
+│   │   ├── DS_SinkTripData.json
+│   │   ├── DS_SourceReferenceData.json
+│   │   └── DS_SourceTripData.json
 │   ├── factory/
-│   │   └── adf-nyc-green-taxi.json
+│   │   ├── adf-nyc-green-taxi.json
+│   │   └── azuredatafactorynyctaxi.json
 │   ├── linkedService/
 │   │   ├── LS_AzureDatabricks.json
 │   │   ├── LS_AzureDataLakeStorage.json
@@ -265,32 +277,34 @@ nyc-green-taxi-data-pipeline/
 │   │   ├── LS_AzureSqlDatabase.json
 │   │   ├── LS_RefereneData.json
 │   │   └── LS_TaxiData.json
-│   ├── dataset/
-│   │   ├── DS_AzureSqlTable.json
-│   │   ├── DS_SinkReferenceData.json
-│   │   ├── DS_SinkTripData.json
-│   │   ├── DS_SourceReferenceData.json
-│   │   └── DS_SourceTripData.json
 │   ├── pipeline/
 │   │   └── pipeline.json
 │   └── trigger/
-│       └── trigger.json
-├── databricks/                                 # Databricks transformation notebooks
-│   └── src/
-│       ├── silver/                             # Silver layer - cleans and standardizes data
-│       │   ├── trip_payment.py
-│       │   ├── trip_type.py
-│       │   ├── trip_zone.py
-│       │   └── trips.py
-│       └── gold/                               # Gold layer - business-ready dimensional & fact tables
-│           ├── dim_payment.py
-│           ├── dim_type.py
-│           ├── dim_zone.py
-│           └── fact_trips.py
+│       └── trigger_every_month.json
+├── databricks/                                 # Databricks data transformation
+│   ├── src/
+│   │   ├── bronze/
+│   │   │   └── landingToBronze.ipynb
+│   │   ├── gold/
+│   │   │   ├── dim_payment.py
+│   │   │   ├── dim_type.py
+│   │   │   ├── dim_zone.py
+│   │   │   └── fact_trips.py
+│   │   ├── setup/
+│   │   │   └── init_schema.ipynb
+│   │   └── silver/                             # Silver layer - cleans and standardizes data
+│   │       ├── payment.py
+│   │       ├── trips.py
+│   │       ├── type.py
+│   │       └── zone.py
+│   └── workflows/
+│       └── jobs.yml
 ├── documents/                                  # Architecture diagrams and dashboard images
-│   ├── adf.png
 │   ├── architecture.png
-│   └── dashboard.jpg
+│   ├── dashboard.jpg
+│   ├── databrick_jobs.jpg
+│   ├── databrick_jobs_flow.jpg
+│   └── ingestion_adf.jpg
 ├── powerbi/                                    # Power BI analytics
 │   └── dashboard.pbix
 └── reference_data/                             # Reference/lookup data files
@@ -298,6 +312,3 @@ nyc-green-taxi-data-pipeline/
     ├── trip_type.csv
     └── trip_zone.csv
 ```
-
-
-
